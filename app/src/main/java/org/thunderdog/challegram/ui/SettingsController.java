@@ -628,6 +628,8 @@ public class SettingsController extends ViewController<Void> implements
     }
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_imper_preferences, R.drawable.baseline_crown_24, R.string.ImperPreferences));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_devices, R.drawable.baseline_devices_other_24, R.string.Devices));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
 
@@ -1155,6 +1157,8 @@ public class SettingsController extends ViewController<Void> implements
         return true;
       });
     } else if (viewId == R.id.btn_languageSettings) {
+      navigateTo(new SettingsLanguageController(context, tdlib));
+    } else if (viewId == R.id.btn_imper_preferences) {
       navigateTo(new SettingsLanguageController(context, tdlib));
     } else if (viewId == R.id.btn_notificationSettings) {
       navigateTo(new SettingsNotificationController(context, tdlib));
