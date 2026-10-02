@@ -2,6 +2,15 @@
 <resources>
   <item name="btn_imper_preferences" type="id"/>
 
+  <item name="controller_imper_settings" type="id"/>
+  <item name="btn_imper_ui_settings" type="id"/>
+
+  <item name="btn_imper_channel" type="id"/>
+  <item name="btn_imper_source" type="id"/>
+
+  <item name="controller_imper_settings_appearance" type="id"/>
+  <item name="btn_imper_md3" type="id"/>
+
   <item type="id" name="app_root" />
   <item type="id" name="app_container" />
 

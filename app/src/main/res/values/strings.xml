@@ -2,7 +2,18 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
   <string name="language_continueInLanguage">Continue in English</string>
 
+  <string name="ImperRestart">Restart the app to apply changes</string>
+
   <string name="ImperPreferences">Imper preferences</string>
+
+  <string name="ImperSettingsGeneral">General</string>
+  <string name="ImperUiSettings">Appearance</string>
+
+  <string name="ImperSettingsLinks">Links</string>
+  <string name="ImperChannel">Telegram channel</string>
+  <string name="ImperSourceCode">Source code</string>
+
+  <string name="ImperMD3">Use material designer 3</string>
 
   <string name="Page1Title">Impergram</string>
   <string name="Page2Title">Fast</string>

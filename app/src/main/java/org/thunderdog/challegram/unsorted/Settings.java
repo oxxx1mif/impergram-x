@@ -203,6 +203,7 @@ public class Settings {
     return instance;
   }
 
+  private static final String KEY_IMPER_MD3 = "imper_md3_enabled";
   private static final String KEY_VERSION = "version";
   private static final String KEY_FEATURES = "features";
   private static final String KEY_FEATURES_ADDED_NOTIFICATIONS = "features_new";
@@ -497,6 +498,8 @@ public class Settings {
 
   @Nullable
   private Integer _incognitoMode;
+
+  @Nullable private Boolean _imperMd3Enabled;
 
   public static final long TUTORIAL_INLINE_SEARCH_SECRECY = 1;
   public static final long TUTORIAL_SECRET_LINK_PREVIEWS = 1 << 1;
@@ -2848,6 +2851,18 @@ public class Settings {
 
   public void setUseBigEmoji (boolean useBigEmoji) {
     setNegativeSetting(FLAG_OTHER_DISABLE_BIG_EMOJI, useBigEmoji);
+  }
+
+  public boolean isImperMd3Enabled () {
+    if (_imperMd3Enabled == null)
+      _imperMd3Enabled = pmc.getBoolean(KEY_IMPER_MD3, false);
+    return _imperMd3Enabled;
+  }
+
+  public void setImperMd3Enabled (boolean value) {
+    _imperMd3Enabled = value;
+    if (value) pmc.putBoolean(KEY_IMPER_MD3, true);
+    else pmc.remove(KEY_IMPER_MD3);
   }
 
   public int getInstantViewMode () {
