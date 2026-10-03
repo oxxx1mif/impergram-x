@@ -203,6 +203,9 @@ public class Settings {
     return instance;
   }
 
+  private static final String KEY_IMPER_AVATAR_RADIUS = "imper_avatar_radius";
+  private static final String KEY_IMPER_AVATAR_SIZE   = "imper_avatar_size";
+  private static final String KEY_IMPER_AVATAR_NO_FRAMES = "imper_avatar_no_frames";
   private static final String KEY_IMPER_MD3 = "imper_md3_enabled";
   private static final String KEY_VERSION = "version";
   private static final String KEY_FEATURES = "features";
@@ -499,6 +502,8 @@ public class Settings {
   @Nullable
   private Integer _incognitoMode;
 
+  @Nullable private Float _imperAvatarRadius;
+  @Nullable private Float _imperAvatarSize;
   @Nullable private Boolean _imperMd3Enabled;
 
   public static final long TUTORIAL_INLINE_SEARCH_SECRECY = 1;
@@ -2851,6 +2856,44 @@ public class Settings {
 
   public void setUseBigEmoji (boolean useBigEmoji) {
     setNegativeSetting(FLAG_OTHER_DISABLE_BIG_EMOJI, useBigEmoji);
+  }
+
+  public boolean isImperAvatarNoFrames () {
+    return getBoolean(KEY_IMPER_AVATAR_NO_FRAMES, false);
+  }
+
+  public void setImperAvatarNoFrames (boolean enabled) {
+    if (isImperAvatarNoFrames() != enabled) {
+      putBoolean(KEY_IMPER_AVATAR_NO_FRAMES, enabled);
+    }
+  }
+
+  public float getImperAvatarRadius () {
+      if (_imperAvatarRadius == null)
+          _imperAvatarRadius = pmc.getFloat(KEY_IMPER_AVATAR_RADIUS, 1f);
+      return _imperAvatarRadius;
+  }
+
+  public void setImperAvatarRadius (float r) {
+      _imperAvatarRadius = r;
+      if (r == 1f) pmc.remove(KEY_IMPER_AVATAR_RADIUS);
+      else pmc.putFloat(KEY_IMPER_AVATAR_RADIUS, r);
+  }
+
+  public float getImperAvatarSize () {
+      if (_imperAvatarSize == null)
+          _imperAvatarSize = pmc.getFloat(KEY_IMPER_AVATAR_SIZE, 1f);
+      return _imperAvatarSize;
+  }
+
+  public boolean isImperAvatarCustomizationEnabled () {
+      return getImperAvatarRadius() != 1f || getImperAvatarSize() != 1f;
+  }
+
+  public void setImperAvatarSize (float s) {
+      _imperAvatarSize = s;
+      if (s == 1f) pmc.remove(KEY_IMPER_AVATAR_SIZE);
+      else pmc.putFloat(KEY_IMPER_AVATAR_SIZE, s);
   }
 
   public boolean isImperMd3Enabled () {

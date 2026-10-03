@@ -50,6 +50,8 @@ import me.vkryl.core.lambda.FutureBool;
 import tgx.td.ChatId;
 import tgx.td.Td;
 
+import org.thunderdog.challegram.unsorted.Settings;
+
 @SuppressWarnings("unchecked")
 public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener {
   public static class FullChatPhoto {
@@ -1124,20 +1126,19 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     float fullScreen = this.isFullScreen.getFloatValue();
     if (fullScreen != 1f) {
       float maxRadius = Math.min(getWidth(), getHeight()) / 2f;
-      float defaultAvatarRadius = defaultAvatarRadiusPropertyId != 0 ? Theme.getProperty(defaultAvatarRadiusPropertyId) : -1.0f;
-      if (defaultAvatarRadius == -1.0f) {
-        defaultAvatarRadius = Theme.getProperty(PropertyId.AVATAR_RADIUS);
+
+      if (Settings.instance().isImperAvatarCustomizationEnabled()) {
+        return maxRadius * Settings.instance().getImperAvatarRadius() * (1f - fullScreen);
       }
-      float forumAvatarRadius = forumAvatarRadiusPropertyId != 0 ? Theme.getProperty(forumAvatarRadiusPropertyId) : -1.0f;
-      if (forumAvatarRadius == -1.0f) {
-        forumAvatarRadius = Theme.getProperty(PropertyId.AVATAR_RADIUS_FORUM);
-      }
+
+      float defaultAvatarRadius = defaultAvatarRadiusPropertyId != 0
+        ? Theme.getProperty(defaultAvatarRadiusPropertyId)
+        : Theme.getProperty(PropertyId.AVATAR_RADIUS);
+      float forumAvatarRadius = forumAvatarRadiusPropertyId != 0
+        ? Theme.getProperty(forumAvatarRadiusPropertyId)
+        : Theme.getProperty(PropertyId.AVATAR_RADIUS_FORUM);
       float radiusFactor = MathUtils.clamp(
-        MathUtils.fromTo(
-          defaultAvatarRadius,
-          forumAvatarRadius,
-          isForum.getFloatValue()
-        )
+        MathUtils.fromTo(defaultAvatarRadius, forumAvatarRadius, isForum.getFloatValue())
       );
       return maxRadius * radiusFactor * (1f - fullScreen);
     }
@@ -1146,6 +1147,43 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
 
   @Override
   public void draw (Canvas c) {
+    float sizeFactor = getImperSizeFactor();
+
+    final int imperSaveCount;
+    if (sizeFactor != 1f) {
+      imperSaveCount = Views.save(c);
+      float cx = (getLeft() + getRight()) * 0.5f;
+      float cy = (getTop() + getBottom()) * 0.5f;
+      c.scale(sizeFactor, sizeFactor, cx, cy);
+    } else {
+      imperSaveCount = -1;
+    }
+
+    try {
+      drawInternal(c);
+    } finally {
+      if (imperSaveCount != -1) {
+        Views.restore(c, imperSaveCount);
+      }
+    }
+  }
+
+  public float getImperSizeFactor () {
+    if (!Settings.instance().isImperAvatarCustomizationEnabled()) {
+      return 1f;
+    }
+    float fullScreen = this.isFullScreen.getFloatValue();
+    if (fullScreen >= 1f) {
+      return 1f;
+    }
+    float size = Settings.instance().getImperAvatarSize();
+    if (size <= 0f) {
+      size = 1f;
+    }
+    return 1f - (1f - size) * (1f - fullScreen);
+  }
+
+  private void drawInternal (Canvas c) {
     float displayRadius = getDisplayRadius();
     float alpha = primaryReceiver().getPaintAlpha();
     if (enabledReceivers != 0) {
@@ -1198,9 +1236,17 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       }
     }
 
-    int contentCutOutColor = ColorUtils.alphaColor(alpha,
-      Theme.getColor(contentCutOutColorId != 0 ? contentCutOutColorId : ColorId.filling)
-    );
+    final boolean noFrames = Settings.instance().isImperAvatarNoFrames()
+    && isFullScreen.getFloatValue() < 1f;
+
+    int contentCutOutColor;
+    if (noFrames) {
+      contentCutOutColor = 0x00000000;
+    } else {
+      contentCutOutColor = ColorUtils.alphaColor(alpha,
+        Theme.getColor(contentCutOutColorId != 0 ? contentCutOutColorId : ColorId.filling)
+      );
+    }
     int onlineColor = ColorUtils.alphaColor(alpha, Theme.getColor(ColorId.online));
     DrawAlgorithms.drawOnline(c,
       this,
