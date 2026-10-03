@@ -14,6 +14,14 @@
   <string name="ImperSourceCode">Source code</string>
 
   <string name="ImperMD3">Use material designer 3</string>
+  <string name="ImperAvatar">Avatar shape</string>
+  <string name="ImperAvatarRadius">Roundness</string>
+  <string name="ImperAvatarSize">Size</string>
+  <string name="ImperAvatarPreviewHint">Preview</string>
+
+  <string name="ImperAvatarFrames">Frames</string>
+  <string name="ImperAvatarNoFrames">Hide online cutout and placeholder ring</string>
+  <string name="ImperAvatarNoFramesDesc">Removes the pale ring behind avatars in profiles, channels and chats. Online status indicator will no longer cut a hole in the avatar.</string>
 
   <string name="Page1Title">Impergram</string>
   <string name="Page2Title">Fast</string>

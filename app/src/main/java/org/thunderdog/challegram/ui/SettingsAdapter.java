@@ -27,6 +27,8 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import android.os.Build;
+
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -116,6 +118,9 @@ import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Filter;
 
+import com.pqcs.impergram.widget.Md3ItemDecoration;
+import org.thunderdog.challegram.unsorted.Settings;
+
 public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> implements MeasuredAdapterDelegate, SliderWrapView.Callback, MaterialEditTextGroup.FocusListener, FactorAnimator.Target, TGLegacyManager.EmojiLoadListener, Lang.Listener, MaterialEditTextGroup.TextChangeListener, FloatListener, ColorToneView.ChangeListener, NonMaterialButton.PressureListener, ChartLayout.Delegate {
   private final Context context;
   private final Tdlib tdlib;
@@ -199,11 +204,6 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
 
   public void setNoEmptyProgress () {
     this.noEmptyProgress = true;
-  }
-
-  @Override
-  public void onAttachedToRecyclerView (RecyclerView recyclerView) {
-    parentViews.add(recyclerView);
   }
 
   @Override
@@ -1381,6 +1381,57 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
   @Override
   public void onViewAttachedToWindow (SettingHolder holder) {
     holder.attach();
+    applyMd3BackgroundIfEnabled(holder);
+  }
+
+  private void applyMd3BackgroundIfEnabled (SettingHolder holder) {
+    if (!Settings.instance().isImperMd3Enabled()) return;
+
+    View v = holder.itemView;
+    int pos = holder.getAdapterPosition();
+    if (pos == RecyclerView.NO_POSITION) {
+      v.setBackground(null);
+      return;
+    }
+
+    List<ListItem> items = getItems();
+    if (items == null || pos < 0 || pos >= items.size()) {
+      v.setBackground(null);
+      return;
+    }
+
+    ListItem item = items.get(pos);
+    if (item == null || com.pqcs.impergram.widget.Md3ItemDecoration.isServiceType(item.getViewType())) {
+      v.setBackground(null);
+      return;
+    }
+
+    boolean isTop = pos == 0
+      || items.get(pos - 1).getViewType() == ListItem.TYPE_SHADOW_TOP;
+    boolean isBottom = pos == items.size() - 1
+      || items.get(pos + 1).getViewType() == ListItem.TYPE_SHADOW_BOTTOM;
+
+    float r = Screen.dp(18f);
+    float tl = isTop ? r : 0f;
+    float tr = isTop ? r : 0f;
+    float bl = isBottom ? r : 0f;
+    float br = isBottom ? r : 0f;
+
+    android.graphics.drawable.GradientDrawable d = new android.graphics.drawable.GradientDrawable();
+    d.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+    d.setColor(org.thunderdog.challegram.theme.Theme.getColor(org.thunderdog.challegram.theme.ColorId.filling));
+    d.setCornerRadii(new float[]{tl, tl, tr, tr, br, br, bl, bl});
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      android.graphics.drawable.RippleDrawable ripple = new android.graphics.drawable.RippleDrawable(
+        android.content.res.ColorStateList.valueOf(0x40a0a0a0),
+        d,
+        null
+      );
+      v.setBackground(ripple);
+    } else {
+      v.setBackground(d);
+    }
   }
 
   @Override

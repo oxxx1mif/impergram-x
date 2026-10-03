@@ -59,6 +59,8 @@ public class ImperAppearanceController extends RecyclerViewController<Void> impl
     List<ListItem> items = new ArrayList<>();
     items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
 
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_imper_avatar_radius, R.drawable.baseline_person_24, R.string.ImperAvatar));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_imper_md3, 0, R.string.ImperMD3));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
@@ -73,6 +75,8 @@ public class ImperAppearanceController extends RecyclerViewController<Void> impl
       boolean enabled = adapter.toggleView(v);
       Settings.instance().setImperMd3Enabled(enabled);
       UI.showToast(R.string.ImperRestart, Toast.LENGTH_LONG);
+    } else if (id == R.id.btn_imper_avatar_radius) {
+      navigateTo(new ImperAvatarController(context, tdlib));
     }
   }
 }

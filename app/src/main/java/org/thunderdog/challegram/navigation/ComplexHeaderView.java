@@ -85,6 +85,8 @@ import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.Future;
 
+import org.thunderdog.challegram.unsorted.Settings;
+
 public class ComplexHeaderView extends BaseView implements RtlCheckListener, StickerPreviewView.PreviewCallback, StickerPreviewView.MenuStickerPreviewCallback, StretchyHeaderView, TextChangeDelegate, Destroyable, ColorSwitchPreparator, MediaCollectorDelegate, BaseView.CustomControllerProvider, TdlibStatusManager.HelperTarget, TGLegacyManager.EmojiLoadListener, HeaderView.OffsetChangeListener {
   private static final int FLAG_SHOW_LOCK = 1;
   private static final int FLAG_SHOW_MUTE = 1 << 1;
@@ -815,9 +817,31 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
 
   public MediaViewThumbLocation getThumbLocation () {
     MediaViewThumbLocation location = new MediaViewThumbLocation();
-    location.set(receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom());
-    location.setClip(0, Math.max(-receiver.getTop(), 0), 0, Math.max(0, receiver.getBottom() - calculateHeaderHeight()));
-    float radius = receiver.getDisplayRadius();
+
+    float sizeFactor = receiver.getImperSizeFactor();
+    int left, top, right, bottom;
+    if (sizeFactor != 1f) {
+      int cx = (receiver.getLeft() + receiver.getRight()) / 2;
+      int cy = (receiver.getTop() + receiver.getBottom()) / 2;
+      int hw = Math.round((receiver.getRight() - receiver.getLeft()) * .5f * sizeFactor);
+      int hh = Math.round((receiver.getBottom() - receiver.getTop()) * .5f * sizeFactor);
+      left   = cx - hw;
+      right  = cx + hw;
+      top    = cy - hh;
+      bottom = cy + hh;
+    } else {
+      left   = receiver.getLeft();
+      top    = receiver.getTop();
+      right  = receiver.getRight();
+      bottom = receiver.getBottom();
+    }
+
+    location.set(left, top, right, bottom);
+    location.setClip(
+      0, Math.max(-receiver.getTop(), 0),
+      0, Math.max(0, receiver.getBottom() - calculateHeaderHeight())
+    );
+    float radius = receiver.getDisplayRadius() * sizeFactor;
     location.setColorId(ColorId.headerBackground);
     location.setRoundings(radius, radius, radius, radius);
     return location;
@@ -872,7 +896,8 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
       final float textScaleFactor = MathUtils.fromTo(1f + scaleFactor * .1f, avatarTextScale, avatarExpandFactor);
 
       layoutReceiver();
-      if (receiver.needPlaceholder()) {
+      final boolean noFrames = Settings.instance().isImperAvatarNoFrames() && avatarExpandFactor < 1f;
+      if (!noFrames && receiver.needPlaceholder()) {
         receiver.drawPlaceholderRounded(c, receiver.getDisplayRadius(), Theme.headerPlaceholderColor());
       }
       receiver.draw(c);
@@ -1083,7 +1108,19 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
       return false;
     }
 
-    boolean caught = y < calculateHeaderHeight() && receiver.isInsideReceiver(x, y);
+    float sizeFactor = receiver.getImperSizeFactor();
+    boolean caught;
+    if (sizeFactor != 1f) {
+      float cx = (receiver.getLeft() + receiver.getRight()) * 0.5f;
+      float cy = (receiver.getTop() + receiver.getBottom()) * 0.5f;
+      float rx = (receiver.getRight() - receiver.getLeft()) * 0.5f * sizeFactor;
+      float ry = (receiver.getBottom() - receiver.getTop()) * 0.5f * sizeFactor;
+      float dx = (x - cx) / rx;
+      float dy = (y - cy) / ry;
+      caught = (dx * dx + dy * dy) <= 1f;
+    } else {
+      caught = y < calculateHeaderHeight() && receiver.isInsideReceiver(x, y);
+    }
     if (set) {
       this.flags = BitwiseUtils.setFlag(this.flags, FLAG_CAUGHT, caught);
     }
