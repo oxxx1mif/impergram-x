@@ -203,8 +203,18 @@ public class Settings {
     return instance;
   }
 
+  public static final int IMPER_BAR_ALIGN_LEFT = 0;
+  public static final int IMPER_BAR_ALIGN_CENTER = 1;
+  public static final int IMPER_BAR_ALIGN_RIGHT = 2;
+
+  private static final String KEY_IMPER_BAR_FLOATING = "imper_bar_floating";
+  private static final String KEY_IMPER_BAR_MARGIN = "imper_bar_margin";
+  private static final String KEY_IMPER_BAR_WIDTH = "imper_bar_width";
+  private static final String KEY_IMPER_BAR_ALIGN = "imper_bar_align";
+  private static final String KEY_IMPER_BAR_RADIUS = "imper_bar_radius";
+  private static final String KEY_IMPER_BAR_LINE = "imper_bar_line";
   private static final String KEY_IMPER_AVATAR_RADIUS = "imper_avatar_radius";
-  private static final String KEY_IMPER_AVATAR_SIZE   = "imper_avatar_size";
+  private static final String KEY_IMPER_AVATAR_SIZE = "imper_avatar_size";
   private static final String KEY_IMPER_AVATAR_NO_FRAMES = "imper_avatar_no_frames";
   private static final String KEY_IMPER_MD3 = "imper_md3_enabled";
   private static final String KEY_VERSION = "version";
@@ -505,6 +515,12 @@ public class Settings {
   @Nullable private Float _imperAvatarRadius;
   @Nullable private Float _imperAvatarSize;
   @Nullable private Boolean _imperMd3Enabled;
+  @Nullable private Float _imperBarRadius;
+  @Nullable private Boolean _imperBarLine;
+  @Nullable private Boolean _imperBarFloating;
+  @Nullable private Float _imperBarFloatingMargin;
+  @Nullable private Float _imperBarFloatingWidthDp;
+  @Nullable private Integer _imperBarAlignment;
 
   public static final long TUTORIAL_INLINE_SEARCH_SECRECY = 1;
   public static final long TUTORIAL_SECRET_LINK_PREVIEWS = 1 << 1;
@@ -2856,6 +2872,93 @@ public class Settings {
 
   public void setUseBigEmoji (boolean useBigEmoji) {
     setNegativeSetting(FLAG_OTHER_DISABLE_BIG_EMOJI, useBigEmoji);
+  }
+
+  public boolean isImperBarFloating () {
+    if (_imperBarFloating == null)
+      _imperBarFloating = pmc.getBoolean(KEY_IMPER_BAR_FLOATING, false);
+    return _imperBarFloating;
+  }
+
+  public void setImperBarFloating (boolean enabled) {
+    _imperBarFloating = enabled;
+    if (enabled) pmc.putBoolean(KEY_IMPER_BAR_FLOATING, true);
+    else pmc.remove(KEY_IMPER_BAR_FLOATING);
+  }
+
+  public float getImperBarFloatingMargin () {
+    if (_imperBarFloatingMargin == null)
+      _imperBarFloatingMargin = pmc.getFloat(KEY_IMPER_BAR_MARGIN, 8f);
+    return _imperBarFloatingMargin;
+  }
+
+  public void setImperBarFloatingMargin (float dp) {
+    if (dp < 0f) dp = 0f;
+    if (dp > 24f) dp = 24f;
+    _imperBarFloatingMargin = dp;
+    if (dp == 8f) pmc.remove(KEY_IMPER_BAR_MARGIN);
+    else pmc.putFloat(KEY_IMPER_BAR_MARGIN, dp);
+  }
+
+  public float getImperBarFloatingWidthDp () {
+    if (_imperBarFloatingWidthDp == null)
+      _imperBarFloatingWidthDp = pmc.getFloat(KEY_IMPER_BAR_WIDTH, 0f);
+    return _imperBarFloatingWidthDp;
+  }
+
+  public void setImperBarFloatingWidthDp (float dp) {
+    if (dp < 0f) dp = 0f;
+    _imperBarFloatingWidthDp = dp;
+    if (dp == 0f) pmc.remove(KEY_IMPER_BAR_WIDTH);
+    else pmc.putFloat(KEY_IMPER_BAR_WIDTH, dp);
+  }
+
+  public int getImperBarAlignment () {
+    if (_imperBarAlignment == null)
+      _imperBarAlignment = pmc.getInt(KEY_IMPER_BAR_ALIGN, IMPER_BAR_ALIGN_CENTER);
+    return _imperBarAlignment;
+  }
+
+  public void setImperBarAlignment (int alignment) {
+    if (alignment != IMPER_BAR_ALIGN_LEFT && alignment != IMPER_BAR_ALIGN_CENTER && alignment != IMPER_BAR_ALIGN_RIGHT)
+      alignment = IMPER_BAR_ALIGN_CENTER;
+    _imperBarAlignment = alignment;
+    if (alignment == IMPER_BAR_ALIGN_CENTER) pmc.remove(KEY_IMPER_BAR_ALIGN);
+    else pmc.putInt(KEY_IMPER_BAR_ALIGN, alignment);
+  }
+
+  public boolean isImperBarCustomizationEnabled () {
+    return getImperBarCornerRadius() != 0f
+      || isImperBarLineEnabled()
+      || isImperBarFloating();
+  }
+
+  public float getImperBarCornerRadius () {
+    if (_imperBarRadius == null) {
+      _imperBarRadius = pmc.getFloat(KEY_IMPER_BAR_RADIUS, 0f);
+    }
+    return _imperBarRadius;
+  }
+
+  public void setImperBarCornerRadius (float r) {
+    if (r < 0f) r = 0f;
+    if (r > 24f) r = 24f;
+    _imperBarRadius = r;
+    if (r == 0f) pmc.remove(KEY_IMPER_BAR_RADIUS);
+    else pmc.putFloat(KEY_IMPER_BAR_RADIUS, r);
+  }
+
+  public boolean isImperBarLineEnabled () {
+    if (_imperBarLine == null) {
+      _imperBarLine = pmc.getBoolean(KEY_IMPER_BAR_LINE, false);
+    }
+    return _imperBarLine;
+  }
+
+  public void setImperBarLineEnabled (boolean enabled) {
+    _imperBarLine = enabled;
+    if (enabled) pmc.putBoolean(KEY_IMPER_BAR_LINE, true);
+    else pmc.remove(KEY_IMPER_BAR_LINE);
   }
 
   public boolean isImperAvatarNoFrames () {

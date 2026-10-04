@@ -32,6 +32,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -1433,6 +1434,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   protected View onCreateView (Context context) {
     contentView = new FrameLayoutFix(context) {
       private boolean isIntercepting;
+      private boolean firstLayoutDone;
 
       @Override
       public boolean onInterceptTouchEvent (MotionEvent ev) {
@@ -1467,7 +1469,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
 
       private float startX, startY;
-
       private int lastHeight;
 
       @Override
@@ -1478,6 +1479,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           onGlobalHeightChanged();
         }
         lastHeight = nowHeight;
+      }
+
+      @Override
+      protected void onLayout (boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        if (!firstLayoutDone && changed && right - left > 0 && bottom - top > 0) {
+          firstLayoutDone = true;
+          ProfileController.this.checkTopViewPosition();
+        }
       }
 
       private float lastY;
@@ -1997,6 +2007,18 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         }
       }
     }
+
+    baseRecyclerView.getViewTreeObserver().addOnGlobalLayoutListener(
+      new ViewTreeObserver.OnGlobalLayoutListener() {
+        @Override
+        public void onGlobalLayout () {
+          ViewTreeObserver observer = baseRecyclerView.getViewTreeObserver();
+          if (observer.isAlive()) {
+            observer.removeOnGlobalLayoutListener(this);
+          }
+          checkTopViewPosition();
+        }
+      });
 
     return contentView;
   }

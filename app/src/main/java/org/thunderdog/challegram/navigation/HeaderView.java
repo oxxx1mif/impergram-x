@@ -43,6 +43,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
+import com.pqcs.impergram.widget.ImperBarRenderer;
+
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SwitchDrawable;
 import org.thunderdog.challegram.core.Lang;
@@ -1185,7 +1187,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   @Override
   public void draw (Canvas c) {
     super.draw(c);
-    if (Color.alpha(overlayColor) > 0) {
+    if (Color.alpha(overlayColor) > 0 && !ImperBarRenderer.isFloating()) {
       c.drawRect(0, 0, getMeasuredWidth(), filling.getBottom(), Paints.fillingPaint(overlayColor));
     }
   }

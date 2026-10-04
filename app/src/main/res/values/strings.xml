@@ -18,6 +18,19 @@
   <string name="ImperAvatarRadius">Roundness</string>
   <string name="ImperAvatarSize">Size</string>
   <string name="ImperAvatarPreviewHint">Preview</string>
+  <string name="ImperBars">Bars</string>
+  <string name="ImperBarRadius">Corner radius</string>
+  <string name="ImperBarFloating">Floating bars</string>
+  <string name="ImperBarFloatingDesc">Bars detach from the screen edges and hover above the content, with all corners rounded.</string>
+  <string name="ImperBarMargin">Edge margin</string>
+  <string name="ImperBarWidth">Bar width</string>
+  <string name="ImperBarWidthDesc">Auto stretches the bar between margins. Choose a fixed width if you want the bar to be narrower.</string>
+  <string name="ImperBarAlign">Alignment</string>
+  <string name="ImperBarAlignLeft">Left</string>
+  <string name="ImperBarAlignCenter">Center</string>
+  <string name="ImperBarAlignRight">Right</string>
+  <string name="ImperBarLine">Show divider along inner edge</string>
+  <string name="ImperBarLineDesc">Draws a thin line where the bar meets content. Turn off to keep the original drop shadow.</string>
 
   <string name="ImperAvatarFrames">Frames</string>
   <string name="ImperAvatarNoFrames">Hide online cutout and placeholder ring</string>

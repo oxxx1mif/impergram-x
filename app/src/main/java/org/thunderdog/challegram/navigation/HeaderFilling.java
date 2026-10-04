@@ -30,6 +30,8 @@ import android.view.ViewConfiguration;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.pqcs.impergram.widget.ImperBarRenderer;
+
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
@@ -83,6 +85,8 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
   private final @Nullable NavigationController navigationController;
 
   // Filling
+
+  private static final float IMPER_FLOATING_TOP_GAP_DP = 4f;
 
   private int color;
 
@@ -390,31 +394,76 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
 
   @Override
   public void draw (@NonNull Canvas c) {
-    if (restoreRect && restorePixels > 0) {
+    final boolean imperFloating = ImperBarRenderer.isFloating();
+    final boolean imperLine = Settings.instance().isImperBarLineEnabled();
+    final boolean imperAny = ImperBarRenderer.isEnabled();
+
+    if (restoreRect && restorePixels > 0 && !imperFloating) {
       if (Lang.rtl()) {
         c.drawRect(0, 0, restorePixels, fillingBottom, Paints.fillingPaint(restoreColor));
       } else {
         c.drawRect(width - restorePixels, 0, width, fillingBottom, Paints.fillingPaint(restoreColor));
       }
     }
+
     if (hasVisibleOngoingBar()) {
       drawOngoingBar(c);
     }
+
     if (fillFactor == 1f && hideFactor == 0f) {
-      c.drawRect(0f, 0f, width, fillingBottom, Paints.fillingPaint(color));
-      if (radiusFactor != 0f && radiusColor != 0) {
-        c.save();
-        c.clipRect(0, 0, width, fillingBottom);
-        float radius = (float) Math.sqrt(width * width + fillingBottom * fillingBottom) * .5f;
-        float startX = Lang.rtl() ? Screen.dp(49f) / 2 - Screen.dp(3f) - Screen.dp(5f) : width - Screen.dp(49f) / 2 + Screen.dp(3f) + Screen.dp(5f);
-        float endX = width / 2;
-        float x = startX + (endX - startX) * radiusFactor;
-        float y = headerView.getEffectiveTopOffset() + HeaderView.getSize(false) / 2 + Screen.dp(2f);
-        c.drawCircle(x, y, radius * radiusFactor, Paints.fillingPaint(ColorUtils.alphaColor(.35f + .65f * radiusFactor, radiusColor)));
-        // c.drawCircle(startX, y, Screen.dp(2f), Paints.fillingPaint(0xaaff0000));
-        c.restore();
+      if (imperFloating) {
+        final int topOffset = getTopOffset();
+        final float topGap = Screen.dp(IMPER_FLOATING_TOP_GAP_DP);
+        final boolean hasPlayer = hasVisibleOngoingBar();
+
+        if (topOffset > 0) {
+          c.drawRect(0f, 0f, width, topOffset, Paints.fillingPaint(color));
+        }
+
+        final float barWidth = ImperBarRenderer.computeFloatingWidth(width);
+        final float left  = ImperBarRenderer.computeFloatingLeft(width, barWidth);
+        final float right = left + barWidth;
+        final float pillTop    = topOffset + topGap;
+        final float pillBottom = Math.min(
+          fillingBottom,
+          topOffset + HeaderView.getSize(false)   // 56dp
+        );
+
+        final int pillEdge = hasPlayer
+          ? ImperBarRenderer.EDGE_TOP
+          : ImperBarRenderer.EDGE_ALL;
+
+        ImperBarRenderer.drawBackground(c, pillEdge, left, pillTop, right, pillBottom, color);
+
+        if (imperLine && !hasPlayer) {
+          ImperBarRenderer.drawEdgeLine(c, left, pillBottom, right, dropShadowAlpha, false);
+        }
+
+      } else {
+        ImperBarRenderer.drawBackground(c, ImperBarRenderer.EDGE_TOP,
+          0f, 0f, width, fillingBottom, color);
+
+        if (radiusFactor != 0f && radiusColor != 0) {
+          c.save();
+          c.clipRect(0, 0, width, fillingBottom);
+          float radius = (float) Math.sqrt(width * width + fillingBottom * fillingBottom) * .5f;
+          float startX = Lang.rtl()
+            ? Screen.dp(49f) / 2 - Screen.dp(3f) - Screen.dp(5f)
+            : width - Screen.dp(49f) / 2 + Screen.dp(3f) + Screen.dp(5f);
+          float endX = width / 2;
+          float x = startX + (endX - startX) * radiusFactor;
+          float y = headerView.getEffectiveTopOffset() + HeaderView.getSize(false) / 2 + Screen.dp(2f);
+          c.drawCircle(x, y, radius * radiusFactor,
+            Paints.fillingPaint(ColorUtils.alphaColor(.35f + .65f * radiusFactor, radiusColor)));
+          c.restore();
+        }
+
+        if (!imperAny) {
+          ShadowView.drawDropShadow(c, 0, width, (int) shadowTop, dropShadowAlpha);
+        } else if (imperLine) {
+          ImperBarRenderer.drawEdgeLine(c, 0f, shadowTop, width, dropShadowAlpha, true);
+        }
       }
-      ShadowView.drawDropShadow(c, 0, width, (int) shadowTop, dropShadowAlpha);
     } else {
       if (fillFactor == 1f) {
         c.drawRect(0f, 0f, width, fillingBottom, Paints.fillingPaint(color));
@@ -422,18 +471,13 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
         c.drawRect(0f, 0f, width, fillingBottom * fillFactor, Paints.fillingPaint(color));
       }
     }
+
     if (navigationController != null) {
       ViewController<?> current = navigationController.getCurrentStackItem();
       if (current != null) {
         current.drawTransform(c, width, (int) fillingBottom);
       }
     }
-    /*if (needStatusBar) {
-      final int offset = getTopOffset();
-      if (navigationController == null && offset > 0) {
-        c.drawRect(0, 0, width, offset, Paints.fillingPaint(Theme.getColor(ColorId.statusBar)));
-      }
-    }*/
   }
 
   private void invalidate () {
@@ -642,15 +686,32 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
   }
 
   private void drawOngoingAudio (Canvas c, int playerTop, float rectWidth, int playerBottom) {
-    if (restoreRect && restorePixels > 0) {
+    final boolean imperFloating = ImperBarRenderer.isFloating();
+    final int playerFillingColor = ColorUtils.alphaColor(dropShadowAlpha, Theme.fillingColor());
+
+    if (restoreRect && restorePixels > 0 && !imperFloating) {
       c.drawRect(rectWidth, playerTop, width, playerBottom, Paints.fillingPaint(Theme.fillingColor()));
     }
 
-    final int playerFillingColor = ColorUtils.alphaColor(dropShadowAlpha, Theme.fillingColor());
+    float spanLeft = 0f;
+    float spanRight = width;
+    if (imperFloating) {
+      final float barWidth = ImperBarRenderer.computeFloatingWidth(width);
+      spanLeft = ImperBarRenderer.computeFloatingLeft(width, barWidth);
+      spanRight = spanLeft + barWidth;
+      ImperBarRenderer.drawBackground(c, ImperBarRenderer.EDGE_BOTTOM,
+        spanLeft, playerTop, spanRight, playerBottom, playerFillingColor);
+    } else {
+      c.drawRect(0, playerTop, rectWidth, playerBottom, Paints.fillingPaint(playerFillingColor));
+    }
 
-    c.drawRect(0, playerTop, rectWidth, playerBottom, Paints.fillingPaint(playerFillingColor));
     if (seekFactor != 0f) {
-      c.drawRect(0, playerBottom - (Screen.dp(1f) + 1), (int) (width * seekFactor), playerBottom, Paints.fillingPaint(ColorUtils.alphaColor(dropShadowAlpha, Theme.getColor(ColorId.headerBarCallActive))));
+      final float seekRight = imperFloating
+        ? spanLeft + (spanRight - spanLeft) * seekFactor
+        : width * seekFactor;
+      c.drawRect(spanLeft, playerBottom - (Screen.dp(1f) + 1), seekRight, playerBottom,
+        Paints.fillingPaint(ColorUtils.alphaColor(dropShadowAlpha,
+          Theme.getColor(ColorId.headerBarCallActive))));
     }
 
     if (speedCounter != null) {
@@ -658,11 +719,19 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
     }
 
     TdApi.File file = TD.getFile(playingMessage);
-    DrawAlgorithms.drawPlayPause(c, getRightButtonCenter(width, 0), playerBottom - Size.getHeaderPlayerSize() / 2, Screen.dp(12f), playPausePath, playPauseDrawFactor, playPauseDrawFactor = playPauseFactor, file != null ? TD.getFileProgress(file) : 1f, ColorUtils.alphaColor(dropShadowAlpha, Theme.iconColor()));
+    DrawAlgorithms.drawPlayPause(c, getRightButtonCenter(width, 0),
+      playerBottom - Size.getHeaderPlayerSize() / 2, Screen.dp(12f),
+      playPausePath, playPauseDrawFactor, playPauseDrawFactor = playPauseFactor,
+      file != null ? TD.getFileProgress(file) : 1f,
+      ColorUtils.alphaColor(dropShadowAlpha, Theme.iconColor()));
 
-    Drawables.draw(c, forwardIcon, getRightButtonLeft(width, 1), playerBottom - Size.getHeaderPlayerSize() / 2 - forwardIcon.getMinimumHeight() / 2, dropShadowAlpha == 1f ? Paints.getIconGrayPorterDuffPaint() : Paints.getPorterDuffPaint(ColorUtils.alphaColor(dropShadowAlpha, Theme.iconColor())));
+    Drawables.draw(c, forwardIcon, getRightButtonLeft(width, 1),
+      playerBottom - Size.getHeaderPlayerSize() / 2 - forwardIcon.getMinimumHeight() / 2,
+      dropShadowAlpha == 1f
+        ? Paints.getIconGrayPorterDuffPaint()
+        : Paints.getPorterDuffPaint(ColorUtils.alphaColor(dropShadowAlpha, Theme.iconColor())));
+
     drawCloseIcon(c, playerTop, width, playerBottom, false);
-
     drawOngoingText(c, playerTop, rectWidth, playerBottom, Screen.dp(67f), null, 1f, 1f);
   }
 
@@ -1036,13 +1105,33 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
   }
 
   private void drawOngoingCall (Canvas c, int playerTop, float rectWidth, int playerBottom) {
-    final int backgroundColor = ColorUtils.fromToArgb(Theme.getColor(ColorId.headerBarCallMuted), ColorUtils.fromToArgb(Theme.getColor(ColorId.headerBarCallActive), Theme.getColor(ColorId.headerBarCallIncoming), callIncomingFactor), (1f - callMuteFactor) * callActiveFactor);
-    if (restoreRect && restorePixels > 0) {
+    final boolean imperFloating = ImperBarRenderer.isFloating();
+
+    final int backgroundColor = ColorUtils.fromToArgb(
+      Theme.getColor(ColorId.headerBarCallMuted),
+      ColorUtils.fromToArgb(
+        Theme.getColor(ColorId.headerBarCallActive),
+        Theme.getColor(ColorId.headerBarCallIncoming),
+        callIncomingFactor),
+      (1f - callMuteFactor) * callActiveFactor);
+
+    if (restoreRect && restorePixels > 0 && !imperFloating) {
       c.drawRect(rectWidth, playerTop, width, playerBottom, Paints.fillingPaint(backgroundColor));
     }
+
     final int playerFillingColor = ColorUtils.alphaColor(dropShadowAlpha, backgroundColor);
 
-    c.drawRect(0, playerTop, rectWidth, playerBottom, Paints.fillingPaint(playerFillingColor));
+    float spanLeft = 0f;
+    float spanRight = width;
+    if (imperFloating) {
+      final float barWidth = ImperBarRenderer.computeFloatingWidth(width);
+      spanLeft = ImperBarRenderer.computeFloatingLeft(width, barWidth);
+      spanRight = spanLeft + barWidth;
+      ImperBarRenderer.drawBackground(c, ImperBarRenderer.EDGE_BOTTOM,
+        spanLeft, playerTop, spanRight, playerBottom, playerFillingColor);
+    } else {
+      c.drawRect(0, playerTop, rectWidth, playerBottom, Paints.fillingPaint(playerFillingColor));
+    }
 
     Paint iconPaint = Paints.whitePorterDuffPaint();
 
@@ -1051,7 +1140,9 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
     int cx = width - Screen.dp(12f) - micIcon.getMinimumWidth();
     int cy = playerTop + Screen.dp(6f);
     Drawables.draw(c, micIcon, cx, cy, iconPaint);
-    DrawAlgorithms.drawCross(c, cx + micIcon.getMinimumWidth() / 2, cy + micIcon.getMinimumHeight() / 2, callMuteFactor, ColorUtils.color(iconPaint.getAlpha(), 0xffffff), playerFillingColor);
+    DrawAlgorithms.drawCross(c, cx + micIcon.getMinimumWidth() / 2,
+      cy + micIcon.getMinimumHeight() / 2, callMuteFactor,
+      ColorUtils.color(iconPaint.getAlpha(), 0xffffff), playerFillingColor);
 
     // Call button
     iconPaint.setAlpha((int) (255f * dropShadowAlpha));
@@ -1061,18 +1152,28 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
     float callRotationFactor = callIncomingFactor * callActiveFactor;
     if (callRotationFactor != 0f) {
       c.save();
-      c.rotate(225f * callRotationFactor, cx + hangIcon.getMinimumWidth() / 2, cy + hangIcon.getMinimumHeight() / 2);
+      c.rotate(225f * callRotationFactor,
+        cx + hangIcon.getMinimumWidth() / 2,
+        cy + hangIcon.getMinimumHeight() / 2);
     }
     Drawables.draw(c, hangIcon, cx, cy, iconPaint);
     if (callActiveFactor != 1f) {
-      DrawAlgorithms.drawCross(c, cx + hangIcon.getMinimumWidth() / 2, cy + hangIcon.getMinimumHeight() / 2 - Screen.dp(2f), 1f - callActiveFactor, ColorUtils.color((int) (255f * dropShadowAlpha), 0xffffff), backgroundColor);
+      DrawAlgorithms.drawCross(c,
+        cx + hangIcon.getMinimumWidth() / 2,
+        cy + hangIcon.getMinimumHeight() / 2 - Screen.dp(2f),
+        1f - callActiveFactor,
+        ColorUtils.color((int) (255f * dropShadowAlpha), 0xffffff),
+        backgroundColor);
     }
     if (callRotationFactor != 0f) {
       c.restore();
     }
     iconPaint.setAlpha(0xff);
 
-    float textAlpha = ((float) 0xe0 / (float) 0xff) * (callFlashFactor <= .5f ? 1f - (callFlashFactor / .5f) : (callFlashFactor - .5f) / .5f);
+    float textAlpha = ((float) 0xe0 / (float) 0xff)
+      * (callFlashFactor <= .5f
+      ? 1f - (callFlashFactor / .5f)
+      : (callFlashFactor - .5f) / .5f);
     drawOngoingText(c, playerTop, rectWidth, playerBottom, textLeft, TextColorSets.WHITE, 1f, textAlpha);
   }
 

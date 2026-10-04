@@ -9,14 +9,21 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
- *
- * File created on 23/04/2015 at 19:07
  */
+
 package org.thunderdog.challegram.navigation;
 
 import android.content.Context;
 import android.graphics.Rect;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.pqcs.impergram.widget.ImperBarRenderer;
+
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.widget.RootFrameLayout;
 
@@ -24,11 +31,28 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.Destroyable;
 
 public class NavigationLayout extends FrameLayoutFix implements Destroyable, RootFrameLayout.InsetsChangeListener {
+
+  private static final int IMPER_EXTRA_DP = 7;
+
   public NavigationLayout (Context context) {
     super(context);
   }
 
   private RootFrameLayout rootView;
+  private NavigationController navigationController;
+  private boolean pendingRefresh;
+
+  private final ViewTreeObserver.OnPreDrawListener stateWatcher = () -> {
+    scheduleRefresh();
+    return true;
+  };
+
+  private void scheduleRefresh () {
+    if (!pendingRefresh) {
+      pendingRefresh = true;
+      post(this::refreshState);
+    }
+  }
 
   @Override
   protected void onAttachedToWindow () {
@@ -36,7 +60,10 @@ public class NavigationLayout extends FrameLayoutFix implements Destroyable, Roo
     rootView = Views.findAncestor(this, RootFrameLayout.class, true);
     if (rootView != null) {
       rootView.addInsetsChangeListener(this);
-      applyTopInset(rootView.getTopInset());
+    }
+    getViewTreeObserver().addOnPreDrawListener(stateWatcher);
+    for (int i = 0; i < getChildCount(); i++) {
+      applyPaddingTo(getChildAt(i));
     }
   }
 
@@ -47,17 +74,74 @@ public class NavigationLayout extends FrameLayoutFix implements Destroyable, Roo
       rootView.removeInsetsChangeListener(this);
       rootView = null;
     }
+    getViewTreeObserver().removeOnPreDrawListener(stateWatcher);
+    pendingRefresh = false;
   }
 
   @Override
-  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect effectiveInsetsWithoutIme, Rect systemInsets, Rect systemInsetsWithoutIme, boolean isUpdate) {
-    applyTopInset(effectiveInsets.top);
+  public void onViewAdded (View child) {
+    super.onViewAdded(child);
+    if (child != null) {
+      applyPaddingTo(child);
+    }
   }
 
-  private void applyTopInset (int topInset) {
-    int newSize = HeaderView.getSize(false) + topInset;
-    if (newSize != getPaddingTop()) {
-      setPadding(0, newSize, 0, 0);
+  @Override
+  public void onInsetsChanged (RootFrameLayout viewGroup,
+                               Rect effectiveInsets,
+                               Rect effectiveInsetsWithoutIme,
+                               Rect systemInsets,
+                               Rect systemInsetsWithoutIme,
+                               boolean isUpdate) {
+    scheduleRefresh();
+  }
+
+  private void refreshState () {
+    pendingRefresh = false;
+    if (navigationController != null && navigationController.isAnimating()) {
+      return;
+    }
+    for (int i = 0; i < getChildCount(); i++) {
+      applyPaddingTo(getChildAt(i));
+    }
+  }
+
+  private void applyPaddingTo (View view) {
+    final int target = HeaderView.getSize(true)
+      + (ImperBarRenderer.isFloating() ? Screen.dp(IMPER_EXTRA_DP) : 0);
+    applyRecursive(view, target);
+  }
+
+  private void applyRecursive (View view, int target) {
+    if (view == null) return;
+
+    if (view instanceof RecyclerView) {
+      RecyclerView rv = (RecyclerView) view;
+      if (rv.getAdapter() == null) return;
+
+      if (rv.isComputingLayout()) return;
+
+      final boolean needsClip = rv.getClipToPadding();
+      final boolean needsPadding = rv.getPaddingTop() != target;
+      if (!needsClip && !needsPadding) return;
+
+      if (needsClip) {
+        rv.setClipToPadding(false);
+      }
+      if (needsPadding) {
+        rv.setPadding(rv.getPaddingLeft(), target, rv.getPaddingRight(), rv.getPaddingBottom());
+      }
+      return;
+    }
+
+    if (view instanceof ViewGroup) {
+      ViewGroup g = (ViewGroup) view;
+      for (int i = 0; i < g.getChildCount(); i++) {
+        View child = g.getChildAt(i);
+        if (child != null && child != this) {
+          applyRecursive(child, target);
+        }
+      }
     }
   }
 
@@ -69,14 +153,10 @@ public class NavigationLayout extends FrameLayoutFix implements Destroyable, Roo
     }
   }
 
-  /* optimization */
-
   private boolean preventLayout;
   private boolean layoutRequested;
 
-  public void preventLayout () {
-    preventLayout = true;
-  }
+  public void preventLayout () { preventLayout = true; }
 
   public void layoutIfRequested () {
     preventLayout = false;
@@ -122,9 +202,11 @@ public class NavigationLayout extends FrameLayoutFix implements Destroyable, Roo
     layoutComplete = 0;
   }
 
-  /* optimization end */
-
   public void setController (NavigationController controller) {
-    // NavigationController controller1 = controller;
+    this.navigationController = controller;
+  }
+
+  public void setTargetRecyclerView (RecyclerView rv) {
+    scheduleRefresh();
   }
 }

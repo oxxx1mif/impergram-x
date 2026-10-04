@@ -17,6 +17,18 @@
   <item name="btn_imper_avatar_size" type="id"/>
   <item name="btn_imper_avatar_preview" type="id"/>
   <item name="btn_imper_avatar_noframes" type="id" />
+  <item name="controller_imper_bars" type="id" />
+  <item name="btn_imper_bar_preview" type="id" />
+  <item name="btn_imper_bar_radius" type="id" />
+  <item name="btn_imper_bar_margin" type="id" />
+  <item name="btn_imper_bar_width" type="id" />
+  <item name="btn_imper_bar_floating" type="id" />
+  <item name="btn_imper_bar_line" type="id" />
+  <item name="btn_imper_bar_align" type="id" />
+  <item name="btn_imper_bar_align_left" type="id" />
+  <item name="btn_imper_bar_align_center" type="id" />
+  <item name="btn_imper_bars" type="id" />
+  <item name="btn_imper_bar_align_right" type="id" />
 
   <item type="id" name="app_root" />
   <item type="id" name="app_container" />

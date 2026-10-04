@@ -718,6 +718,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
     messagesManager.setManager(manager);
 
     messagesView = (MessagesRecyclerView) Views.inflate(context(), R.layout.recycler_messages, contentView);
+    if (Settings.instance().isImperBarFloating()) {
+      messagesView.setClipToPadding(false);
+      messagesView.setPadding(
+        messagesView.getPaddingLeft(),
+        HeaderView.getSize(true),     // 56dp + status bar
+        messagesView.getPaddingRight(),
+        messagesView.getPaddingBottom()
+      );
+    }
     if (isInForceTouchMode()) {
       messagesView.setVerticalScrollBarEnabled(false);
     }

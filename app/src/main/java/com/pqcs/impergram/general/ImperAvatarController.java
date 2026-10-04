@@ -94,6 +94,8 @@ public class ImperAvatarController extends RecyclerViewController<Void>
 
     List<ListItem> items = new ArrayList<>();
 
+    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+
     items.add(new ListItem(ListItem.TYPE_CUSTOM_SINGLE, R.id.btn_imper_avatar_preview, 0, 0));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 

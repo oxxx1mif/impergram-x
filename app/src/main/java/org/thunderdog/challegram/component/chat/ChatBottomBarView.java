@@ -27,6 +27,8 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
+import com.pqcs.impergram.widget.ImperBarRenderer;
+
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
@@ -59,10 +61,28 @@ public class ChatBottomBarView extends BaseView {
         RectF rectF = buildRectF();
         int radius = calculateRadius();
         int color = ColorUtils.fromToArgb(Theme.fillingColor(), Theme.getColor(ColorId.circleButtonChat), collapseFactor);
-        if (radius == 0) {
-          c.drawRect(rectF.left, rectF.top, rectF.right, rectF.bottom, Paints.fillingPaint(color));
+
+        if (collapseFactor >= 1f || radius > 0) {
+          if (radius == 0) {
+            c.drawRect(rectF.left, rectF.top, rectF.right, rectF.bottom, Paints.fillingPaint(color));
+          } else {
+            c.drawRoundRect(rectF, radius, radius, Paints.fillingPaint(color));
+          }
+          return;
+        }
+
+        if (ImperBarRenderer.isFloating()) {
+          float margin = ImperBarRenderer.getFloatingMarginPx();
+          float w = ImperBarRenderer.computeFloatingWidth(getMeasuredWidth());
+          float left = ImperBarRenderer.computeFloatingLeft(getMeasuredWidth(), w);
+          float right = left + w;
+          float top = rectF.top + margin;
+          float bottom = rectF.bottom - margin;
+          ImperBarRenderer.drawBackground(c, ImperBarRenderer.EDGE_ALL,
+            left, top, right, bottom, color);
         } else {
-          c.drawRoundRect(rectF, radius, radius, Paints.fillingPaint(color));
+          ImperBarRenderer.drawBackground(c, ImperBarRenderer.EDGE_BOTTOM,
+            rectF.left, rectF.top, rectF.right, rectF.bottom, color);
         }
       }
     };
@@ -284,5 +304,7 @@ public class ChatBottomBarView extends BaseView {
       state.draw(c, this, collapseFactor, 1f, rectF.centerX(), rectF.centerY());
       c.restore();
     }
+    ImperBarRenderer.drawEdgeLine(c, 0f, 0f, getMeasuredWidth(),
+      Math.max(0f, 1f - collapseFactor), false);
   }
 }
